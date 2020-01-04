@@ -25,7 +25,7 @@ class App(QDialog):
     nodes = []
     labels = []
 
-    start_x, start_y, goal_x, goal_y = 14, 8, 55, 55
+    start_x, start_y, goal_x, goal_y = 14, 8, 25, 25
 
     def __init__(self):
         super().__init__()
@@ -35,7 +35,6 @@ class App(QDialog):
         self.top = 10
         self.width = 320
         self.height = 100
-        QTimer.singleShot(1500, self.astar_pathfind)
 
     def initUI(self):
         self.setWindowTitle(self.title)
@@ -45,6 +44,7 @@ class App(QDialog):
         windowLayout.addWidget(self.horizontalGroupBox)
         self.setLayout(windowLayout)
         self.show()
+        QTimer.singleShot(15, self.astar_pathfind)
 
     def showEvent(self, event):
         self.initUI()
@@ -65,35 +65,31 @@ class App(QDialog):
 
     def astar_pathfind(self):
         oned_loc = int(self.NUM_ROWS * self.start_x + self.start_y)
-        startLabel = self.labels[oned_loc]
-        if startLabel is not None:
-            startLabel.setStyleSheet("background-color: green;")
-        endLabel = self.labels[int(self.NUM_ROWS * self.goal_x + self.goal_y)]
-        endLabel.setStyleSheet("background-color: blue;")
         open_set = [self.nodes[oned_loc]]
         while len(open_set) != 0:
-            min_f = 0
+            min_f = 100000
             node_min_f = None
             for cur_node in open_set:
-                if cur_node.f_score > min_f:
+                if cur_node.f_score < min_f:
                     min_f = cur_node.f_score
                     node_min_f = cur_node
                     open_set.remove(node_min_f)
             if node_min_f.x_loc == self.goal_x and node_min_f.y_loc == self.goal_y:
                 print("found the goal")
                 return
+            self.labels[int(self.NUM_ROWS * node_min_f.x_loc + node_min_f.y_loc)].setStyleSheet("background-color: green;")
             for node in self.getNeighs(node_min_f.x_loc, node_min_f.y_loc):
-                cur_neigh = self.nodes[int(node[0] * self.NUM_ROWS + node[1])]
+                oned_index = int(node[0] * self.NUM_ROWS + node[1])
+                cur_neigh = self.nodes[oned_index]
                 tentative_g_score = node_min_f.g_score + 1
                 if tentative_g_score < cur_neigh.g_score:
-                    self.nodes[int(node[0] * self.NUM_ROWS + node[1])].g_score = tentative_g_score
-                    self.nodes[int(node[0] * self.NUM_ROWS + node[1])].f_score = tentative_g_score + self.manhattanDistance(node[0], node[1])
-                    time.sleep(0.1)
-                    self.labels[int(node[0] * self.NUM_ROWS + node[1])].setStyleSheet("background-color: red;")
-                    self.labels[int(node_min_f.x_loc * self.NUM_ROWS + node_min_f.y_loc)].setStyleSheet("background-color: green;")
-                    self.repaint()
                     if cur_neigh not in open_set:
                         open_set.append(cur_neigh)
+                        self.nodes[oned_index].g_score = tentative_g_score
+                        self.nodes[oned_index].f_score = tentative_g_score + self.manhattanDistance(node[0], node[1])
+                        self.labels[oned_index].setStyleSheet("background-color: red;")
+                        self.labels[oned_index].setText(str(self.nodes[oned_index].f_score))
+                        self.repaint()
         return 1
 
     def create_grid_layout(self):
@@ -106,12 +102,13 @@ class App(QDialog):
                 style_val = "background-color: white;border: 1px solid black;"
                 label = QLabel()
                 label.setFixedSize(self.BOX_DIM_X, self.BOX_DIM_Y)
-                label.setStyleSheet(style_val)
                 curNode = Node(i, j, 100000, 100000, 100000)
                 if curNode.x_loc == self.start_x and curNode.y_loc == self.start_y:
-                    print("Update the start location")
                     curNode.g_score = 0
                     curNode.f_score = self.manhattanDistance(i, j)
+                if curNode.x_loc == self.goal_y and curNode.y_loc == self.goal_y:
+                    style_val += "background-color: blue;"
+                label.setStyleSheet(style_val)
                 label.setText(str(curNode.g_score))
                 self.nodes.append(curNode)
                 layout.addWidget(label, i, j)
