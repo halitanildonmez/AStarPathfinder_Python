@@ -30,7 +30,7 @@ class App(QDialog):
     start_x, start_y, goal_x, goal_y = 14, 8, 66, 79
     wall_start_row = 50
     wall_start_col = 70
-    wall_face_down = range(50, 70)
+    wall_face_down = range(wall_start_row, wall_start_col)
 
     layout = QGridLayout()
 
