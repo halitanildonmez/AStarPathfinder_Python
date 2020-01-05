@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QApplication, QDialog, QVBoxLayout, QGroupBox, \
-    QGridLayout, QLabel
+    QGridLayout, QLabel, QPushButton
 import sys
 import time, math
 from PyQt5.QtCore import QTimer
@@ -30,6 +30,8 @@ class App(QDialog):
     wall_start_col = 70
     wall_face_down = range(50, 70)
 
+    layout = QGridLayout()
+
     def __init__(self):
         super().__init__()
         self.horizontalGroupBox = QGroupBox("")
@@ -38,19 +40,53 @@ class App(QDialog):
         self.top = 10
         self.width = 320
         self.height = 100
+        self.layout.setColumnStretch(1, 4)
+        self.layout.setColumnStretch(2, 4)
+        self.layout.setSpacing(0)
 
     def initUI(self):
         self.setWindowTitle(self.title)
         self.setGeometry(self.left, self.top, self.width, self.height)
         self.create_grid_layout()
+        self.horizontalGroupBox.setLayout(self.layout)
+        button1 = QPushButton()
+        button1.setText("Redo")
+        button1.clicked.connect(self.button1_clicked)
         windowLayout = QVBoxLayout()
+        windowLayout.addWidget(button1)
         windowLayout.addWidget(self.horizontalGroupBox)
         self.setLayout(windowLayout)
         self.show()
-        QTimer.singleShot(10, self.astar_pathfind)
+        QTimer.singleShot(1, self.astar_pathfind)
 
     def showEvent(self, event):
         self.initUI()
+
+    def resetMap(self, i, j):
+        oned_index = int(i * self.NUM_ROWS + j)
+        style_val = "background-color: white;border: 1px solid black;"
+        label = QLabel()
+        label.setFixedSize(self.BOX_DIM_X, self.BOX_DIM_Y)
+        curNode = Node(i, j, math.inf, math.inf, math.inf)
+        if curNode.x_loc == self.start_x and curNode.y_loc == self.start_y:
+            curNode.g_score = 0
+            curNode.f_score = self.manhattanDistance(i, j)
+        elif curNode.x_loc == self.goal_x and curNode.y_loc == self.goal_y:
+            style_val += "background-color: blue;"
+        elif (j in self.wall_face_down and i == self.wall_start_row) or (
+                j == self.wall_start_col and i in self.wall_face_down):
+            style_val += "background-color: black;"
+            curNode.scalable = False
+        self.labels[oned_index].setStyleSheet(style_val)
+        self.labels[oned_index].setText(str(curNode.g_score))
+        self.nodes.append(curNode)
+
+    def button1_clicked(self):
+        self.nodes.clear()
+        for i in range(self.NUM_ROWS):
+            for j in range(self.NUM_COLS):
+                self.resetMap(i, j)
+        QTimer.singleShot(1, self.astar_pathfind)
 
     def getNeighs(self, i, j):
         neighs = []
@@ -114,10 +150,6 @@ class App(QDialog):
         return -1
 
     def create_grid_layout(self):
-        layout = QGridLayout()
-        layout.setColumnStretch(1, 4)
-        layout.setColumnStretch(2, 4)
-        layout.setSpacing(0)
         for i in range(self.NUM_ROWS):
             for j in range(self.NUM_COLS):
                 style_val = "background-color: white;border: 1px solid black;"
@@ -136,9 +168,8 @@ class App(QDialog):
                 label.setStyleSheet(style_val)
                 label.setText(str(curNode.g_score))
                 self.nodes.append(curNode)
-                layout.addWidget(label, i, j)
+                self.layout.addWidget(label, i, j)
                 self.labels.append(label)
-        self.horizontalGroupBox.setLayout(layout)
 
 
 if __name__ == '__main__':
